@@ -23,6 +23,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private bool autoStartRunOnAwake = true;
 
     public GameState CurrentState { get; private set; } = GameState.Boot;
+    public ScoreSystem ScoreSystem { get; private set; }
+    public ComboSystem ComboSystem { get; private set; }
 
     public event Action<GameState> OnStateChanged;
 
@@ -35,6 +37,10 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
+
+        ComboSystem = new ComboSystem();
+        ScoreSystem = new ScoreSystem(() => ComboSystem.Multiplier);
+
         SetState(GameState.Boot);
 
         if (autoStartRunOnAwake)
@@ -53,13 +59,32 @@ public class GameManager : MonoBehaviour
 
     public void StartRun()
     {
+        ScoreSystem.ResetScore();
+        ComboSystem.ResetCombo();
+
         SetState(GameState.Running);
         Time.timeScale = 1f;
     }
 
     public void SetDead()
     {
+        ResetCombo();
         SetState(GameState.Dead);
+    }
+
+    public int AddScore(int basePoints)
+    {
+        return ScoreSystem.AddPoints(basePoints);
+    }
+
+    public void IncrementCombo()
+    {
+        ComboSystem.IncrementCombo();
+    }
+
+    public void ResetCombo()
+    {
+        ComboSystem.ResetCombo();
     }
 
     public void Pause()
