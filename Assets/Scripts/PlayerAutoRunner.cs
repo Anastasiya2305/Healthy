@@ -20,9 +20,9 @@ public class PlayerAutoRunner : MonoBehaviour
 
     private void FixedUpdate()
     {
-        var velocity = rb.velocity;
+        var velocity = rb.linearVelocity;
         velocity.z = forwardSpeed;
-        rb.velocity = velocity;
+        rb.linearVelocity = velocity;
     }
 
     private void Update()
@@ -34,9 +34,9 @@ public class PlayerAutoRunner : MonoBehaviour
 
         if (IsGrounded())
         {
-            var velocity = rb.velocity;
+            var velocity = rb.linearVelocity;
             velocity.y = 0f;
-            rb.velocity = velocity;
+            rb.linearVelocity = velocity;
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
     }
