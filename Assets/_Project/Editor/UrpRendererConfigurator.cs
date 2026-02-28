@@ -1,28 +1,28 @@
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-[InitializeOnLoad]
 public static class UrpRendererConfigurator
 {
     private const string RendererAssetPath = "Assets/_Project/Settings/URP/Renderer3D.asset";
-    private static bool _hasRunThisSession;
+    private const string SessionRunKey = "UrpRendererConfigurator.HasRun";
 
-    static UrpRendererConfigurator()
+    [InitializeOnLoadMethod]
+    private static void Initialize()
     {
+        if (SessionState.GetBool(SessionRunKey, false))
+        {
+            return;
+        }
+
+        SessionState.SetBool(SessionRunKey, true);
         EditorApplication.delayCall += ConfigureRenderer;
     }
 
     private static void ConfigureRenderer()
     {
-        if (_hasRunThisSession)
-        {
-            return;
-        }
-
-        _hasRunThisSession = true;
-
         var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         if (urpAsset == null)
         {
@@ -31,6 +31,7 @@ public static class UrpRendererConfigurator
         }
 
         EnsureFolder("Assets/_Project");
+        EnsureFolder("Assets/_Project/Editor");
         EnsureFolder("Assets/_Project/Settings");
         EnsureFolder("Assets/_Project/Settings/URP");
 
@@ -73,18 +74,20 @@ public static class UrpRendererConfigurator
             changedDefaultRenderer = true;
         }
 
-        if (createdRendererAsset || addedRendererToUrpAsset || changedDefaultRenderer)
+        if (!createdRendererAsset && !addedRendererToUrpAsset && !changedDefaultRenderer)
         {
-            urpSerializedObject.ApplyModifiedProperties();
-            EditorUtility.SetDirty(urpAsset);
-            AssetDatabase.SaveAssets();
-
-            Debug.Log(
-                $"[URP Renderer Configurator] Configured 3D renderer at '{RendererAssetPath}'. " +
-                $"CreatedAsset={createdRendererAsset}, AddedToURP={addedRendererToUrpAsset}, " +
-                $"SetDefaultRenderer={changedDefaultRenderer}, DefaultIndex={rendererIndex}."
-            );
+            return;
         }
+
+        urpSerializedObject.ApplyModifiedProperties();
+        EditorUtility.SetDirty(urpAsset);
+        AssetDatabase.SaveAssets();
+
+        Debug.Log(
+            $"[URP Renderer Configurator] Configured 3D renderer at '{RendererAssetPath}'. " +
+            $"CreatedAsset={createdRendererAsset}, AddedToURP={addedRendererToUrpAsset}, " +
+            $"SetDefaultRenderer={changedDefaultRenderer}, DefaultIndex={rendererIndex}."
+        );
     }
 
     private static int IndexOfRenderer(SerializedProperty rendererDataList, UniversalRendererData target)
@@ -107,8 +110,8 @@ public static class UrpRendererConfigurator
             return;
         }
 
-        var parent = System.IO.Path.GetDirectoryName(folderPath)?.Replace('\\', '/');
-        var folderName = System.IO.Path.GetFileName(folderPath);
+        var parent = Path.GetDirectoryName(folderPath)?.Replace('\\', '/');
+        var folderName = Path.GetFileName(folderPath);
 
         if (!string.IsNullOrEmpty(parent) && !AssetDatabase.IsValidFolder(parent))
         {
