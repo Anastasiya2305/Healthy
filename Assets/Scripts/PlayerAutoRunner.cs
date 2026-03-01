@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(CapsuleCollider))]
@@ -41,9 +42,12 @@ public class PlayerAutoRunner : MonoBehaviour
         }
     }
 
-    private bool WantsJump()
+    private static bool WantsJump()
     {
-        return Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0);
+        bool keyboardPressed = Keyboard.current?.spaceKey.wasPressedThisFrame == true;
+        bool mousePressed = Mouse.current?.leftButton.wasPressedThisFrame == true;
+        bool touchPressed = Touchscreen.current?.primaryTouch.press.wasPressedThisFrame == true;
+        return keyboardPressed || mousePressed || touchPressed;
     }
 
     private bool IsGrounded()
