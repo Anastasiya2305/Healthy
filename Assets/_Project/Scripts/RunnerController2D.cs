@@ -5,48 +5,86 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(Collider2D))]
 public class RunnerController2D : MonoBehaviour
 {
-    [SerializeField] private float jumpVelocity = 8f;
-    [SerializeField] private float groundCheckDistance = 0.1f;
+    [Header("Movement")]
+    [SerializeField] private float runSpeed = 6f;
+
+    [Header("Jump")]
+    [SerializeField] private float jumpImpulse = 8f;
+
+    [Header("Ground Check")]
     [SerializeField] private LayerMask groundMask = ~0;
-    [SerializeField] private float fallGravityScale = 3f;
+    [SerializeField] private float groundCheckDistance = 0.1f;
+
+    [Header("Dive (Optional)")]
+    [SerializeField] private bool enableDive = true;
+    [SerializeField] private float diveGravityScale = 3f;
 
     private Rigidbody2D rb;
-    private Collider2D col;
+    private Collider2D bodyCollider;
     private float baseGravityScale;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        col = GetComponent<Collider2D>();
+        bodyCollider = GetComponent<Collider2D>();
         baseGravityScale = rb.gravityScale;
     }
 
     private void Update()
     {
-        bool jumpPressed = Keyboard.current?.spaceKey.wasPressedThisFrame == true
-                           || Mouse.current?.leftButton.wasPressedThisFrame == true
-                           || Touchscreen.current?.primaryTouch.press.wasPressedThisFrame == true;
-
-        if (jumpPressed && IsGrounded())
+        if (IsJumpPressedThisFrame() && IsGrounded())
         {
-            Vector2 velocity = rb.linearVelocity;
-            velocity.y = jumpVelocity;
-            rb.linearVelocity = velocity;
+            Jump();
         }
 
-        bool holdPressed = Keyboard.current?.spaceKey.isPressed == true
-                           || Mouse.current?.leftButton.isPressed == true
-                           || Touchscreen.current?.primaryTouch.press.isPressed == true;
+        if (enableDive)
+        {
+            bool shouldDive = IsJumpHeld() && !IsGrounded() && rb.linearVelocity.y < 0f;
+            rb.gravityScale = shouldDive ? diveGravityScale : baseGravityScale;
+        }
+        else
+        {
+            rb.gravityScale = baseGravityScale;
+        }
+    }
 
-        rb.gravityScale = holdPressed && rb.linearVelocity.y < 0f ? fallGravityScale : baseGravityScale;
+    private void FixedUpdate()
+    {
+        Vector2 velocity = rb.linearVelocity;
+        velocity.x = runSpeed;
+        rb.linearVelocity = velocity;
+    }
+
+    private void Jump()
+    {
+        Vector2 velocity = rb.linearVelocity;
+        velocity.y = 0f;
+        rb.linearVelocity = velocity;
+        rb.AddForce(Vector2.up * jumpImpulse, ForceMode2D.Impulse);
     }
 
     private bool IsGrounded()
     {
-        Bounds bounds = col.bounds;
-        Vector2 origin = new Vector2(bounds.center.x, bounds.min.y + 0.01f);
-        float width = Mathf.Max(0.05f, bounds.extents.x * 0.95f);
-        RaycastHit2D hit = Physics2D.BoxCast(origin, new Vector2(width * 2f, 0.05f), 0f, Vector2.down, groundCheckDistance, groundMask);
+        Bounds bounds = bodyCollider.bounds;
+        Vector2 castOrigin = new Vector2(bounds.center.x, bounds.min.y + 0.01f);
+        Vector2 castSize = new Vector2(Mathf.Max(0.05f, bounds.size.x * 0.9f), 0.05f);
+        RaycastHit2D hit = Physics2D.BoxCast(castOrigin, castSize, 0f, Vector2.down, groundCheckDistance, groundMask);
         return hit.collider != null;
+    }
+
+    private static bool IsJumpPressedThisFrame()
+    {
+        bool keyboardPressed = Keyboard.current?.spaceKey.wasPressedThisFrame == true;
+        bool mousePressed = Mouse.current?.leftButton.wasPressedThisFrame == true;
+        bool touchPressed = Touchscreen.current?.primaryTouch.press.wasPressedThisFrame == true;
+        return keyboardPressed || mousePressed || touchPressed;
+    }
+
+    private static bool IsJumpHeld()
+    {
+        bool keyboardHeld = Keyboard.current?.spaceKey.isPressed == true;
+        bool mouseHeld = Mouse.current?.leftButton.isPressed == true;
+        bool touchHeld = Touchscreen.current?.primaryTouch.press.isPressed == true;
+        return keyboardHeld || mouseHeld || touchHeld;
     }
 }
