@@ -39,7 +39,7 @@ public class RunnerController2D : MonoBehaviour
 
         if (enableDive)
         {
-            bool shouldDive = IsJumpHeld() && !IsGrounded() && rb.linearVelocity.y < 0f;
+            bool shouldDive = IsJumpHeld() && !IsGrounded() && rb.velocity.y < 0f;
             rb.gravityScale = shouldDive ? diveGravityScale : baseGravityScale;
         }
         else
@@ -50,16 +50,16 @@ public class RunnerController2D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        Vector2 velocity = rb.linearVelocity;
+        Vector2 velocity = rb.velocity;
         velocity.x = runSpeed;
-        rb.linearVelocity = velocity;
+        rb.velocity = velocity;
     }
 
     private void Jump()
     {
-        Vector2 velocity = rb.linearVelocity;
+        Vector2 velocity = rb.velocity;
         velocity.y = 0f;
-        rb.linearVelocity = velocity;
+        rb.velocity = velocity;
         rb.AddForce(Vector2.up * jumpImpulse, ForceMode2D.Impulse);
     }
 
